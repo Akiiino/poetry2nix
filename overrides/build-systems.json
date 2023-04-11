@@ -10232,6 +10232,9 @@
   "onnx": [
     "setuptools"
   ],
+  "onnx-models": [
+    "poetry"
+  ],
   "onvif-zeep-async": [
     "setuptools"
   ],
