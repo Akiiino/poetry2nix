@@ -4464,7 +4464,8 @@
     "setuptools"
   ],
   "dm-tree": [
-    "setuptools"
+    "setuptools",
+    "cython"
   ],
   "dmenu-python": [
     "setuptools"
@@ -8269,6 +8270,9 @@
   ],
   "lazy-import": [
     "setuptools"
+  ],
+  "lazy-loader": [
+    "flit-core"
   ],
   "lazy-object-proxy": [
     "setuptools",
@@ -16239,6 +16243,9 @@
     "setuptools",
     "setuptools-scm"
   ],
+  "silence-tensorflow": [
+    "setuptools"
+  ],
   "simanneal": [
     "setuptools"
   ],
@@ -17135,6 +17142,9 @@
     "setuptools"
   ],
   "supervisor": [
+    "setuptools"
+  ],
+  "support-developer": [
     "setuptools"
   ],
   "sure": [
