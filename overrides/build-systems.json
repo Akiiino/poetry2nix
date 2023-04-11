@@ -2066,7 +2066,8 @@
     "setuptools"
   ],
   "beniget": [
-    "setuptools"
+    "setuptools",
+    "setuptools-scm"
   ],
   "bespon": [
     "setuptools"
