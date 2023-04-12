@@ -5922,7 +5922,8 @@
     "setuptools"
   ],
   "gast": [
-    "setuptools"
+    "setuptools",
+    "setuptools-scm"
   ],
   "gatt": [
     "setuptools"
