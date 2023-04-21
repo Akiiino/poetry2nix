@@ -384,6 +384,7 @@ lib.composeManyExtensions [
             "39.0.2" = "sha256-Admz48/GS2t8diz611Ciin1HKQEyMDEwHxTpJ5tZ1ZA=";
             "40.0.0" = "sha256-/TBANavYria9YrBpMgjtFyqg5feBcloETcYJ8fdBgkI=";
             "40.0.1" = "sha256-gFfDTc2QWBWHBCycVH1dYlCsWQMVcRZfOBIau+njtDU=";
+            "40.0.2" = "sha256-cV4GTfbVYanElXOVmynvrru2wJuWvnT1Z1tQKXdkbg0=";
           }.${version} or (
             lib.warn "Unknown cryptography version: '${version}'. Please update getCargoHash." lib.fakeHash
           );
@@ -1285,6 +1286,14 @@ lib.composeManyExtensions [
             buildInputs = (old.buildInputs or [ ]) ++ [ self.setuptools self.setuptools-scm self.setuptools-scm-git-archive ];
           });
 
+      munch = super.munch.overridePythonAttrs (
+        old: {
+          # Latest version of pypi imports pkg_resources at runtime, so setuptools is needed at runtime. :(
+          # They fixed this last year but never released a new version.
+          propagatedBuildInputs = (old.propagatedBuildInputs or [ ]) ++ [ self.setuptools ];
+        }
+      );
+
       mpi4py = super.mpi4py.overridePythonAttrs (
         old:
         let
@@ -1421,6 +1430,37 @@ lib.composeManyExtensions [
         }
       );
 
+      # The following are dependencies of torch >= 2.0.0.
+      # torch doesn't officially support system CUDA, unless you build it yourself.
+      nvidia-cudnn-cu11 = super.nvidia-cudnn-cu11.overridePythonAttrs (attrs: {
+        autoPatchelfIgnoreMissingDeps = true;
+        # (Bytecode collision happens with nvidia-cuda-nvrtc-cu11.)
+        postFixup = ''
+          rm -r $out/${self.python.sitePackages}/nvidia/{__pycache__,__init__.py}
+        '';
+        propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [
+          self.nvidia-cublas-cu11
+        ];
+      });
+
+      nvidia-cuda-nvrtc-cu11 = super.nvidia-cuda-nvrtc-cu11.overridePythonAttrs (_: {
+        # (Bytecode collision happens with nvidia-cudnn-cu11.)
+        postFixup = ''
+          rm -r $out/${self.python.sitePackages}/nvidia/{__pycache__,__init__.py}
+        '';
+      });
+
+      nvidia-cusolver-cu11 = super.nvidia-cusolver-cu11.overridePythonAttrs (attrs: {
+        autoPatchelfIgnoreMissingDeps = true;
+        # (Bytecode collision happens with nvidia-cusolver-cu11.)
+        postFixup = ''
+          rm -r $out/${self.python.sitePackages}/nvidia/{__pycache__,__init__.py}
+        '';
+        propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [
+          self.nvidia-cublas-cu11
+        ];
+      });
+
       omegaconf = super.omegaconf.overridePythonAttrs (
         old: {
           nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.jdk ];
@@ -1522,6 +1562,7 @@ lib.composeManyExtensions [
             "3.8.6" = "sha256-8T//q6nQoZhh8oJWDCeQf3gYRew58dXAaxkYELY4CJM=";
             "3.8.7" = "sha256-JBO8nl0sC+XIn17vI7hC8+nA1HYI9jfvZrl9nCE3k1s=";
             "3.8.8" = "sha256-AK4HtqPKg2O2FeLHCbY9o+N1BV4QFMNaHVE1NaFYHa4=";
+            "3.8.10" = "sha256-AcrTEHv7GYtGe4fXYsM24ElrzfhnOxLYlaon1ZrlD4A=";
           }.${version} or (
             lib.warn "Unknown orjson version: '${version}'. Please update getCargoHash." lib.fakeHash
           );
@@ -1574,6 +1615,10 @@ lib.composeManyExtensions [
         postInstall = old.postInstall or "" + ''
           installManPage docs/man/*.[1-9]
         '';
+      });
+
+      pao = super.pao.overridePythonAttrs (old: {
+        propagatedBuildInputs = old.propagatedBuildInputs or [ ] ++ [ self.pyutilib ];
       });
 
       paramiko = super.paramiko.overridePythonAttrs (old: {
@@ -2492,61 +2537,33 @@ lib.composeManyExtensions [
         preferWheel = true;
       };
 
-      torch = lib.makeOverridable
-        ({ enableCuda ? false
-         , cudatoolkit ? pkgs.cudatoolkit_10_1
-         , pkg ? super.torch
-         }: pkg.overrideAttrs (old:
-          {
-            preConfigure =
-              if (!enableCuda) then ''
-                export USE_CUDA=0
-              '' else ''
-                export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${cudatoolkit}/targets/x86_64-linux/lib"
-              '';
-            preFixup = lib.optionalString (!enableCuda) ''
-              # For some reason pytorch retains a reference to libcuda even if it
-              # is explicitly disabled with USE_CUDA=0.
-              find $out -name "*.so" -exec ${pkgs.patchelf}/bin/patchelf --remove-needed libcuda.so.1 {} \;
-            '';
-            buildInputs =
-              (old.buildInputs or [ ])
-              ++ [ self.typing-extensions ]
-              ++ lib.optionals enableCuda [
-                pkgs.linuxPackages.nvidia_x11
-                pkgs.nccl.dev
-                pkgs.nccl.out
-              ];
-            propagatedBuildInputs = [
-              self.numpy
-              self.future
-              self.typing-extensions
-            ];
-          })
-        )
-        { };
+      torch = super.torch.overridePythonAttrs (old: {
+        # torch has an auto-magical way to locate the cuda libraries from site-packages.
+        autoPatchelfIgnoreMissingDeps = true;
+        propagatedBuildInputs = (old.propagatedBuildInputs or [ ]) ++ [
+          self.numpy
+        ];
+      });
 
-      torchvision = lib.makeOverridable
-        ({ enableCuda ? false
-         , cudatoolkit ? pkgs.cudatoolkit_10_1
-         , pkg ? super.torchvision
-         }: pkg.overrideAttrs (old: {
+      torchvision = super.torchvision.overridePythonAttrs (old: {
+        autoPatchelfIgnoreMissingDeps = true;
 
-          # without that autoPatchelfHook will fail because cudatoolkit is not in LD_LIBRARY_PATH
-          autoPatchelfIgnoreMissingDeps = true;
-          buildInputs = (old.buildInputs or [ ])
-            ++ [ self.torch ]
-            ++ lib.optionals enableCuda [
-            cudatoolkit
-          ];
-          preConfigure =
-            if (enableCuda) then ''
-              export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${self.torch}/${self.python.sitePackages}/torch/lib:${lib.makeLibraryPath [ cudatoolkit "${cudatoolkit}" ]}"
-            '' else ''
-              export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${self.torch}/${self.python.sitePackages}/torch/lib"
-            '';
-        }))
-        { };
+        # (no patchelf on darwin, since no elves there.)
+        preFixup = lib.optionals (!stdenv.isDarwin) ''
+          addAutoPatchelfSearchPath "${self.torch}/${self.python.sitePackages}/torch/lib"
+        '';
+
+        buildInputs = (old.buildInputs or [ ]) ++ [
+          self.torch
+        ];
+      });
+
+      # Circular dependency between triton and torch (see https://github.com/openai/triton/issues/1374)
+      # You can remove this once triton publishes a new stable build and torch takes it.
+      triton = super.triton.overridePythonAttrs (old: {
+        propagatedBuildInputs = builtins.filter (e: e.pname != "torch") old.propagatedBuildInputs;
+        pipInstallFlags = [ "--no-deps" ];
+      });
 
       typed_ast = super.typed-ast.overridePythonAttrs (old: {
         nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [

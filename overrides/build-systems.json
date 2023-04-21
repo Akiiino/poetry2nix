@@ -1193,7 +1193,22 @@
     "setuptools"
   ],
   "attrs": [
-    "setuptools"
+    {
+      "buildSystem": "setuptools",
+      "until": "23.1.0"
+    },
+    {
+      "buildSystem": "hatchling",
+      "from": "23.1.0"
+    },
+    {
+      "buildSystem": "hatch-vcs",
+      "from": "23.1.0"
+    },
+    {
+      "buildSystem": "hatch-fancy-pypi-readme",
+      "from": "23.1.0"
+    }
   ],
   "aubio": [
     "setuptools"
@@ -2045,6 +2060,7 @@
     "setuptools"
   ],
   "beautifulsoup4": [
+    "hatchling",
     "setuptools"
   ],
   "beautifultable": [
@@ -8514,6 +8530,9 @@
   "liquidctl": [
     "setuptools"
   ],
+  "lit": [
+    "setuptools"
+  ],
   "littleutils": [
     "setuptools"
   ],
@@ -9159,10 +9178,16 @@
     "poetry",
     "setuptools"
   ],
+  "mkdocs-awesome-pages-plugin": [
+    "poetry"
+  ],
   "mkdocs-drawio-exporter": [
     "setuptools"
   ],
   "mkdocs-exclude": [
+    "setuptools"
+  ],
+  "mkdocs-exclude-search": [
     "setuptools"
   ],
   "mkdocs-gen-files": [
@@ -9561,6 +9586,9 @@
   "mypy-boto3-dynamodb": [
     "setuptools"
   ],
+  "mypy-boto3-ec2": [
+    "setuptools"
+  ],
   "mypy-boto3-events": [
     "setuptools"
   ],
@@ -9574,6 +9602,9 @@
     "setuptools"
   ],
   "mypy-boto3-s3control": [
+    "setuptools"
+  ],
+  "mypy-boto3-secretsmanager": [
     "setuptools"
   ],
   "mypy-boto3-sns": [
@@ -10710,6 +10741,9 @@
     "setuptools"
   ],
   "panflute": [
+    "setuptools"
+  ],
+  "pao": [
     "setuptools"
   ],
   "papermill": [
@@ -16544,6 +16578,9 @@
   "sonarr": [
     "setuptools"
   ],
+  "sonora": [
+    "poetry-core"
+  ],
   "sopel": [
     "setuptools"
   ],
@@ -18182,6 +18219,9 @@
   "types-pygments": [
     "setuptools"
   ],
+  "types-pyopenssl": [
+    "setuptools"
+  ],
   "types-python-dateutil": [
     "setuptools"
   ],
@@ -18455,7 +18495,7 @@
     "setuptools"
   ],
   "url-normalize": [
-    "poetry-core",
+    "poetry",
     "setuptools"
   ],
   "urlextract": [
